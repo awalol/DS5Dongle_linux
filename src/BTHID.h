@@ -1,0 +1,24 @@
+//
+// Created by awalol on 2026/3/30.
+//
+
+#ifndef DS5_DONGLE_LINUX_BTHID_H
+#define DS5_DONGLE_LINUX_BTHID_H
+#include <cstdint>
+#include <vector>
+#include <sys/types.h>
+
+
+class BTHID {
+private:
+    int fd = -1;
+public:
+    int init();
+    int get_fd() const { return fd; }
+    ssize_t send(uint8_t* data, size_t size) const;
+    std::vector<std::uint8_t> recv() const;
+};
+
+
+
+#endif //DS5_DONGLE_LINUX_BTHID_H
