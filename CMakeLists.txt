@@ -20,6 +20,7 @@ target_include_directories(wdl_resampler PUBLIC
         libs/WDL/WDL
 )
 
+target_compile_options(wdl_resampler PRIVATE -fsigned-char)
 
 add_executable(ds5_dongle_linux
         src/USBGadget.cpp
@@ -31,6 +32,8 @@ add_executable(ds5_dongle_linux
         src/USBHID.h
         src/BTHID.cpp
         src/BTHID.h)
+
+target_compile_options(ds5_dongle_linux PRIVATE -fsigned-char)
 
 target_link_libraries(ds5_dongle_linux PRIVATE
         ALSA::ALSA

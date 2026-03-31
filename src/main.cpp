@@ -5,6 +5,7 @@
 #include "USBGadget.h"
 #include "BTHID.h"
 #include "USBHID.h"
+#include "ALSARecord.h"
 
 #include <cstring>
 #include <chrono>
@@ -15,6 +16,8 @@
 USBGadget gadget;
 BTHID bt;
 USBHID usb;
+ALSARecord recorder(bt);
+
 uint8_t interrupt_data[64] = {
     0x01, 0x7f, 0x7d, 0x7f, 0x7e, 0x00, 0x00, 0xa7,
     0x08, 0x00, 0x00, 0x00, 0x52, 0x43, 0x30, 0x41,
@@ -26,8 +29,11 @@ uint8_t interrupt_data[64] = {
     0x53, 0x9f, 0x28, 0x35, 0xa5, 0xa8, 0x0c, 0x8b
 };
 
-int reportSeqCounter = 0;
-uint8_t packetCounter = 0;
+void audio_task(const std::stop_token &stop_token) {
+    while (!stop_token.stop_requested()) {
+        recorder.audio_loop();
+    }
+}
 
 void event_bus(const std::stop_token& stop_token) {
     int epoll_fd = epoll_create1(0);
@@ -62,20 +68,13 @@ void event_bus(const std::stop_token& stop_token) {
 
         for (int i = 0; i < num_events; i++) {
             if (events[i].data.fd == usb.get_fd()) {
+                // USB SetReport / Interrupt OUT
                 std::vector<std::uint8_t> data = usb.recv();
                 if (data.empty()) {
                     continue;
                 }
                 if (data[0] == 0x02) {
-                    uint8_t outputData[78] = {};
-                    outputData[0] = 0x31;
-                    outputData[1] = reportSeqCounter << 4;
-                    if (++reportSeqCounter == 256) {
-                        reportSeqCounter = 0;
-                    }
-                    outputData[2] = 0x10;
-                    memcpy(outputData + 3,data.data() + 1,data.size() - 1);
-                    bt.send(outputData, sizeof(outputData));
+                    bt.setStateData(data.data() + 1,63);
                 }
             }else if (events[i].data.fd == bt.get_fd()) {
                 // 接收蓝牙的状态数据
@@ -102,13 +101,20 @@ int main() {
         return -1;
     }
 
+    if (recorder.init() != 0) {
+        return -1;
+    }
+
     auto thread = std::jthread(event_bus);
+    auto thread2 = std::jthread(audio_task);
 
     while (true) {
         std::cout << "press any key to exit" << std::endl;
         std::cin.get();
         thread.request_stop();
         thread.join();
+        thread2.request_stop();
+        thread2.join();
         // gadget.destroy();
         break;
     }

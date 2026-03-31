@@ -12,11 +12,15 @@
 class BTHID {
 private:
     int fd = -1;
+    int reportSeqCounter = 0;
+    uint8_t packetCounter = 0;
 public:
     int init();
     int get_fd() const { return fd; }
     ssize_t send(uint8_t* data, size_t size) const;
     std::vector<std::uint8_t> recv() const;
+    void setStateData(uint8_t* data, size_t size);
+    ssize_t sendHaptics(const int8_t* data);
 };
 
 
