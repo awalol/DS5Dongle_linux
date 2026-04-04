@@ -1,3 +1,6 @@
 [submodule "libs/WDL"]
 	path = libs/WDL
 	url = https://github.com/justinfrankel/WDL.git
+[submodule "libs/opus"]
+	path = libs/opus
+	url = https://github.com/xiph/opus.git

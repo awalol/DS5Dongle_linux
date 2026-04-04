@@ -5,12 +5,16 @@
 #include "BTHID.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <ostream>
+#include <queue>
 #include <unistd.h>
+
+#define BUFFER_LENGTH 0xFF
 
 uint32_t crc32(const uint8_t* data, std::size_t size) {
     uint32_t crc = ~0xEADA2D49;  // 0xA2 seed
@@ -79,22 +83,66 @@ void BTHID::setStateData(uint8_t* data, size_t size) {
     send(outputData, sizeof(outputData));
 }
 
-ssize_t BTHID::sendHaptics(const int8_t* data) {
-    uint8_t pkt[142] = {};
-    pkt[0] = 0x32;
+ssize_t BTHID::sendHaptics(const uint8_t* data) {
+    uint8_t pkt[206] = {};
+    pkt[0] = 0x33;
     pkt[1] = reportSeqCounter << 4;
     reportSeqCounter = (reportSeqCounter + 1) % 256;
     pkt[2] = 0x11 | (1 << 7);
     pkt[3] = 7;
     pkt[4] = 0b11111110;
-    pkt[5] = 48;
-    pkt[6] = 48;
-    pkt[7] = 48;
-    pkt[8] = 48;
-    pkt[9] = 48; // buffer length
+    pkt[5] = BUFFER_LENGTH;
+    pkt[6] = BUFFER_LENGTH;
+    pkt[7] = BUFFER_LENGTH;
+    pkt[8] = BUFFER_LENGTH;
+    pkt[9] = BUFFER_LENGTH; // buffer length
     pkt[10] = packetCounter++;
     pkt[11] = 0x12 | (1 << 7);
     pkt[12] = 64;
     memcpy(pkt + 13, data, 64);
+    return send(pkt, sizeof(pkt));
+}
+
+ssize_t BTHID::sendSpeaker(const uint8_t* data) {
+    static uint8_t pkt[270] = {};
+    pkt[0] = 0x34;
+    pkt[1] = reportSeqCounter << 4;
+    reportSeqCounter = (reportSeqCounter + 1) & 0x0F;
+    pkt[2] = 0x11 | 0 << 6 | 1 << 7;
+    pkt[3] = 7;
+    pkt[4] = 0b11111110;
+    pkt[5] = BUFFER_LENGTH;
+    pkt[6] = BUFFER_LENGTH;
+    pkt[7] = BUFFER_LENGTH;
+    pkt[8] = BUFFER_LENGTH;
+    pkt[9] = BUFFER_LENGTH; // buffer length
+    pkt[10] = packetCounter++;
+    pkt[11] = 0x16 | 0 << 6 | 1 << 7; // Speaker: 0x13 Headset: 0x16
+    pkt[12] = 200;
+    memcpy(pkt + 13, data, 200);
+
+    return send(pkt, sizeof(pkt));
+}
+
+ssize_t BTHID::sendCombine(const uint8_t* haptics,const uint8_t* speaker) {
+    static uint8_t pkt[334] = {};
+    pkt[0] = 0x35;
+    pkt[1] = reportSeqCounter << 4;
+    reportSeqCounter = (reportSeqCounter + 1) & 0x0F;
+    pkt[2] = 0x11 | 0 << 6 | 1 << 7;
+    pkt[3] = 7;
+    pkt[4] = 0b11111110;
+    pkt[5] = BUFFER_LENGTH;
+    pkt[6] = BUFFER_LENGTH;
+    pkt[7] = BUFFER_LENGTH;
+    pkt[8] = BUFFER_LENGTH;
+    pkt[9] = BUFFER_LENGTH; // buffer length
+    pkt[10] = packetCounter++;
+    pkt[11] = 0x13 | 0 << 6 | 1 << 7; // 0x96 Speaker: 0x13 Headset: 0x16
+    pkt[12] = 200;
+    memcpy(pkt + 13, speaker, 200);
+    pkt[213] = 0x12 | 0 << 6 | 1 << 7; // 0x91
+    pkt[214] = 64;
+    memcpy(pkt + 215, haptics, 64);
     return send(pkt, sizeof(pkt));
 }

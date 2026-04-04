@@ -7,6 +7,7 @@
 #include <alsa/asoundlib.h>
 
 #include "BTHID.h"
+#include "opus.h"
 #include "resample.h"
 
 class ALSARecord {
@@ -14,8 +15,10 @@ private:
     bool opened = false;
     snd_pcm_t *handle;
     WDL_Resampler resampler;
+    OpusEncoder *opus;
     BTHID& bt;
     void haptics_proc(int16_t* data,ssize_t frames);
+    void speaker_proc(int16_t* data,ssize_t frames);
 public:
     int init();
     // return: read frames

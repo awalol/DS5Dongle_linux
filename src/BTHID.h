@@ -9,6 +9,10 @@
 #include <sys/types.h>
 
 
+namespace std {
+    class stop_token;
+}
+
 class BTHID {
 private:
     int fd = -1;
@@ -20,7 +24,10 @@ public:
     ssize_t send(uint8_t* data, size_t size) const;
     std::vector<std::uint8_t> recv() const;
     void setStateData(uint8_t* data, size_t size);
-    ssize_t sendHaptics(const int8_t* data);
+    void queue_task(std::stop_token);
+    ssize_t sendHaptics(const uint8_t* data);
+    ssize_t sendSpeaker(const uint8_t* data);
+    ssize_t sendCombine(const uint8_t* haptics,const uint8_t* speaker);
 };
 
 

@@ -13,13 +13,13 @@ set(ALSA_INCLUDE_DIR /usr/include)
 find_package(ALSA REQUIRED)
 find_package(Threads REQUIRED)
 
+# WDL
 add_library(wdl_resampler STATIC
         libs/WDL/WDL/resample.cpp
 )
 target_include_directories(wdl_resampler PUBLIC
         libs/WDL/WDL
 )
-
 target_compile_options(wdl_resampler PRIVATE -fsigned-char)
 
 add_executable(ds5_dongle_linux
@@ -35,10 +35,16 @@ add_executable(ds5_dongle_linux
 
 target_compile_options(ds5_dongle_linux PRIVATE -fsigned-char)
 
+set(OPUS_FIXED_POINT ON)
+set(OPUS_DISABLE_INTRINSICS ON)
+
+add_subdirectory(libs/opus)
+
 target_link_libraries(ds5_dongle_linux PRIVATE
         ALSA::ALSA
         Threads::Threads
         wdl_resampler
+        opus
 )
 
 #add_custom_command(TARGET ds5_dongle_linux POST_BUILD
