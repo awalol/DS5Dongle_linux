@@ -11,6 +11,8 @@
 #include <iostream>
 #include <ostream>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/usb/g_hid.h>
 
 int USBHID::init() {
     fd = open("/dev/hidg0",O_RDWR | O_NONBLOCK);
@@ -20,6 +22,7 @@ int USBHID::init() {
         return -1;
     }
     std::cout << "Gadget HID device opened" << std::endl;
+    
     return 0;
 }
 
@@ -42,4 +45,17 @@ std::vector<std::uint8_t> USBHID::recv() const {
     }
     data.resize(std::ranges::max(0, (int)ret));
     return data;
+}
+
+ssize_t USBHID::set_get_report(uint8_t reportId, const std::vector<uint8_t> &data) const {
+    usb_hidg_report report{};
+    report.report_id = reportId;
+    report.userspace_req = 0;
+    report.length = data.size();
+    memcpy(report.data,data.data(),data.size());
+    const ssize_t ret = ioctl(fd, GADGET_HID_WRITE_GET_REPORT, &report);
+    if (ret < 0) {
+        perror("set_get_report");
+    }
+    return ret;
 }

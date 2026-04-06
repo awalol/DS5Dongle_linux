@@ -24,10 +24,11 @@ public:
     ssize_t send(uint8_t* data, size_t size) const;
     std::vector<std::uint8_t> recv() const;
     void setStateData(uint8_t* data, size_t size);
-    void queue_task(std::stop_token);
     ssize_t sendHaptics(const uint8_t* data);
     ssize_t sendSpeaker(const uint8_t* data);
     ssize_t sendCombine(const uint8_t* haptics,const uint8_t* speaker);
+    ssize_t send_feature_report(const uint8_t* data,size_t size) const;
+    std::vector<std::uint8_t> get_feature_report(uint8_t reportId, size_t maxLength) const;
 };
 
 

@@ -31,7 +31,9 @@ add_executable(ds5_dongle_linux
         src/USBHID.cpp
         src/USBHID.h
         src/BTHID.cpp
-        src/BTHID.h)
+        src/BTHID.h
+        src/Utils.cpp
+        src/Utils.h)
 
 target_compile_options(ds5_dongle_linux PRIVATE -fsigned-char)
 

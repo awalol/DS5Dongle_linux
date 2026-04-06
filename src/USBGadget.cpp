@@ -108,7 +108,8 @@ bool USBGadget::create() {
     if (!make_dir(hid_func) ||
         !write_file(hid_func + "/protocol", "0") ||
         !write_file(hid_func + "/subclass", "0") ||
-        !write_file(hid_func + "/report_length", "64")) {
+        !write_file(hid_func + "/report_length", "64") ||
+        !write_file(hid_func + "/no_out_endpoint","1")) { // INTERRUPT OUT fallback to SET_REPORT
         return false;
     }
 

@@ -13,6 +13,10 @@
 #include <ostream>
 #include <queue>
 #include <unistd.h>
+#include <linux/hidraw.h>
+#include <sys/ioctl.h>
+
+#include "Utils.h"
 
 #define BUFFER_LENGTH 0xFF
 
@@ -45,10 +49,11 @@ int BTHID::init() {
         return -1;
     }
     std::cout << "BTHID device opened" << std::endl;
+
     return 0;
 }
 
-// Auto fill crc32 in last 4 bytes
+// Auto fill crc32 at last 4 bytes
 ssize_t BTHID::send(uint8_t* data, size_t size) const {
     if (fd < 0) {
         return 0;
@@ -144,5 +149,25 @@ ssize_t BTHID::sendCombine(const uint8_t* haptics,const uint8_t* speaker) {
     pkt[213] = 0x12 | 0 << 6 | 1 << 7; // 0x91
     pkt[214] = 64;
     memcpy(pkt + 215, haptics, 64);
+    std::cout << "sendCombine" << std::endl;
+    Utils::print_hex(pkt, sizeof(pkt));
     return send(pkt, sizeof(pkt));
+}
+
+ssize_t BTHID::send_feature_report(const uint8_t *data, const size_t size) const {
+    const auto res = ioctl(fd, HIDIOCSFEATURE(size), data);
+    if (res < 0) {
+        perror("send_feature_report");
+    }
+    return res;
+}
+
+std::vector<uint8_t> BTHID::get_feature_report(uint8_t reportId, size_t maxLength) const {
+    std::vector<uint8_t> buf(maxLength);
+    buf[0] = reportId;
+    const auto res = ioctl(fd, HIDIOCGFEATURE(maxLength), buf.data());
+    if (res < 0) {
+        perror("get_feature_report");
+    }
+    return buf;
 }

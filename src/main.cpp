@@ -13,6 +13,8 @@
 #include <thread>
 #include <sys/epoll.h>
 
+#include "Utils.h"
+
 USBGadget gadget;
 BTHID bt;
 USBHID usb;
@@ -75,6 +77,13 @@ void event_bus(const std::stop_token& stop_token) {
                 }
                 if (data[0] == 0x02) {
                     bt.setStateData(data.data() + 1,63);
+                    continue;
+                }
+                if (data[0] == 0x80) {
+                    bt.send_feature_report(data.data(),64);
+                    if (auto ret = bt.get_feature_report(0x81,64); !ret.empty()) {
+                        auto rs = usb.set_get_report(0x81,ret);
+                    }
                 }
             }else if (events[i].data.fd == bt.get_fd()) {
                 // 接收蓝牙的状态数据
@@ -94,16 +103,38 @@ int main() {
         gadget.create();
     }
 
-    if (bt.init() != 0) {
+    if (usb.init() != 0) {
         return -1;
     }
-    if (usb.init() != 0) {
+
+    if (bt.init() != 0) {
         return -1;
     }
 
     if (recorder.init() != 0) {
         return -1;
     }
+
+    // Init DualSense
+    std::cout << "Get Controller and Host MAC" << std::endl;
+    auto report_0x09 = bt.get_feature_report(0x09,20);
+    auto ret = usb.set_get_report(0x09,report_0x09);
+    Utils::print_hex(report_0x09);
+
+    std::cout << "Get Controller Version/Data (Firmware Info)" << std::endl;
+    auto report_0x20 = bt.get_feature_report(0x20,64);
+    ret = usb.set_get_report(0x20,report_0x20);
+    Utils::print_hex(report_0x20);
+
+    std::cout << "Get Hardware Info" << std::endl;
+    auto report_0x22 = bt.get_feature_report(0x22,64);
+    ret = usb.set_get_report(0x22,report_0x22);
+    Utils::print_hex(report_0x22);
+
+    std::cout << "Get Calibration" << std::endl;
+    auto report_0x05 = bt.get_feature_report(0x05,41);
+    ret = usb.set_get_report(0x05,report_0x05);
+    Utils::print_hex(report_0x05);
 
     auto thread = std::jthread(event_bus);
     auto thread2 = std::jthread(audio_task);

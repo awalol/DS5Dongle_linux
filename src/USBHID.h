@@ -17,8 +17,8 @@ public:
     int init();
     int get_fd() const { return fd; }
     ssize_t send(uint8_t* data, size_t size) const;
-
     std::vector<uint8_t> recv() const;
+    ssize_t set_get_report(uint8_t reportId, const std::vector<uint8_t>& data) const;
 };
 
 
