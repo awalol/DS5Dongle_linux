@@ -8,6 +8,7 @@
 #include <iostream>
 #include <alsa/error.h>
 #include "resample.h"
+#include "Utils.h"
 
 int ALSARecord::init() {
     int ret = snd_pcm_open(&handle, "hw:0,0", SND_PCM_STREAM_CAPTURE, 0);
@@ -22,7 +23,7 @@ int ALSARecord::init() {
         4,
         48000,
         1,
-        10 * 1000 // us
+        50 * 1000 // us
     );
     if (ret < 0) {
         std::cerr << "Failed to set PCM parameters: " << snd_strerror(ret) << std::endl;
@@ -68,13 +69,9 @@ ssize_t ALSARecord::read(int16_t* buffer, snd_pcm_uframes_t frames) const {
     ssize_t ret = snd_pcm_readi(handle, buffer, frames);
     if (ret < 0) {
         perror("snd_pcm_readi");
-    }
-    if (ret == -EPIPE) {
-        // XRUN
+        snd_pcm_abort(handle);
         snd_pcm_prepare(handle);
-    } else if (ret == -EIO) {
-        // 设备错误（USB断流等）
-        snd_pcm_prepare(handle);
+        snd_pcm_start(handle);
     }
     return ret;
 }
@@ -83,7 +80,7 @@ void ALSARecord::audio_loop() {
     static int16_t buffer[32 * 4] = {};
     auto frames = read(buffer,32);
     if (frames > 0) {
-        // speaker_proc(buffer,frames);
+        speaker_proc(buffer,frames);
         haptics_proc(buffer,frames);
     }
 }

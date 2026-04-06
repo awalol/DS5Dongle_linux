@@ -149,8 +149,8 @@ ssize_t BTHID::sendCombine(const uint8_t* haptics,const uint8_t* speaker) {
     pkt[213] = 0x12 | 0 << 6 | 1 << 7; // 0x91
     pkt[214] = 64;
     memcpy(pkt + 215, haptics, 64);
-    std::cout << "sendCombine" << std::endl;
-    Utils::print_hex(pkt, sizeof(pkt));
+    // std::cout << "sendCombine" << std::endl;
+    // Utils::print_hex(pkt, sizeof(pkt));
     return send(pkt, sizeof(pkt));
 }
 
