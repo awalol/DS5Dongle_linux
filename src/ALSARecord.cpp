@@ -68,7 +68,7 @@ ssize_t ALSARecord::read(int16_t* buffer, snd_pcm_uframes_t frames) const {
     // 1 frames = 4ch = 4 * int16
     ssize_t ret = snd_pcm_readi(handle, buffer, frames);
     if (ret < 0) {
-        perror("snd_pcm_readi");
+        // perror("snd_pcm_readi"); // 会高频输出
         snd_pcm_abort(handle);
         snd_pcm_prepare(handle);
         snd_pcm_start(handle);

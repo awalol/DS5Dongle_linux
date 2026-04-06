@@ -80,6 +80,7 @@ void event_bus(const std::stop_token& stop_token) {
                     continue;
                 }
                 if (data[0] == 0x80) {
+                    data.resize(64);
                     bt.send_feature_report(data.data(),64);
                     if (auto ret = bt.get_feature_report(0x81,64); !ret.empty()) {
                         auto rs = usb.set_get_report(0x81,ret);
@@ -116,9 +117,31 @@ int main() {
     }
 
     // Init DualSense
+
+    uint8_t report32[142] = {};
+    report32[0] = 0x32;
+    report32[1] = 0x10; // reportSeqCounter
+    uint8_t packet_0x10[] =
+    {
+        0x10 | 0 << 6 | 1 << 7, // Packet: 0x10
+        63, // DS:47 DSE:63
+        // SetStateData
+        0xfd, 0xf7, 0x0, 0x0,
+        0x7f, 0x7f, // Headphones, Speaker
+        0xff, 0x9, 0x0, 0xf, 0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xa,
+        0x7, 0x0, 0x0, 0x2, 0x1,
+        0x00,
+        0xff, 0xd7, 0x00 // RGB LED: R, G, B (Nijika Color!)✨
+    };
+    memcpy(report32 + 2, packet_0x10, sizeof(packet_0x10));
+    auto ret = bt.send(report32, sizeof(report32));
+
     std::cout << "Get Controller and Host MAC" << std::endl;
     auto report_0x09 = bt.get_feature_report(0x09,20);
-    auto ret = usb.set_get_report(0x09,report_0x09);
+    ret = usb.set_get_report(0x09,report_0x09);
     Utils::print_hex(report_0x09);
 
     std::cout << "Get Controller Version/Data (Firmware Info)" << std::endl;
